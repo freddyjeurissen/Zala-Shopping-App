@@ -1,0 +1,7 @@
+{
+  "appId": "ai.jeemc.boodschappen",
+  "appName": "Boodschappen Zala",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "backgroundColor": "#f6f4ee" }
+}
