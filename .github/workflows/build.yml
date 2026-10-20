@@ -1,0 +1,91 @@
+name: Bouw app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: bouw-app
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Pakketten installeren
+        run: npm install --no-audit --no-fund
+
+      - name: Configuratie en Supabase-bibliotheek
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+        run: |
+          mkdir -p www/vendor
+          cp node_modules/@supabase/supabase-js/dist/umd/supabase.js www/vendor/supabase.js
+          node -e "const r=process.env.GITHUB_REPOSITORY;require('fs').writeFileSync('www/config.js','window.BZ_CONFIG='+JSON.stringify({supabaseUrl:process.env.SUPABASE_URL||'',supabaseAnonKey:process.env.SUPABASE_ANON_KEY||'',apkUrl:'https://github.com/'+r+'/releases/latest/download/boodschappen-zala.apk'})+';\n')"
+          if [ -z "$SUPABASE_URL" ]; then echo "::warning::SUPABASE_URL ontbreekt; de app draait dan alleen lokaal op het apparaat."; fi
+
+      - name: Vaste ondertekensleutel bewaren (zodat updates over de vorige versie heen installeren)
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: debug-keystore-v1
+
+      - name: Android-project maken
+        run: |
+          npx cap add android
+          perl -0pi -e 's#</manifest>#    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
+          perl -pi -e 's/versionCode \d+/versionCode ${{ github.run_number }}/; s/versionName "[^"]*"/versionName "0.1.${{ github.run_number }}"/' android/app/build.gradle
+
+      - name: App-icoon
+        continue-on-error: true
+        run: npx capacitor-assets generate --android --assetPath assets --iconBackgroundColor '#3d6b4f' --splashBackgroundColor '#f6f4ee'
+
+      - name: APK bouwen
+        run: |
+          npx cap sync android
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../boodschappen-zala.apk
+
+      - name: APK publiceren als release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.1.${{ github.run_number }}
+          name: Boodschappen Zala 0.1.${{ github.run_number }}
+          body: Testversie. Installeren via de downloadpagina of direct dit APK-bestand.
+          make_latest: "true"
+          files: boodschappen-zala.apk
+
+      - name: Website klaarzetten
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: www
+
+  pages:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
