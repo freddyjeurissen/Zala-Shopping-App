@@ -1,7 +1,11 @@
 {
   "appId": "ai.jeemc.boodschappen",
-  "appName": "Boodschappen Zala",
+  "appName": "Zala - Shopping App",
   "webDir": "www",
-  "server": { "androidScheme": "https" },
-  "android": { "backgroundColor": "#f6f4ee" }
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#f6f4ee"
+  }
 }

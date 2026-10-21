@@ -1,0 +1,28 @@
+{{ $l := "" }}{{ with .Data }}{{ with .lang }}{{ $l = . }}{{ end }}{{ end }}
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#1f2a24">
+  <div style="height:6px;background:linear-gradient(90deg,#ce2939 0 33.3%,#ffffff 33.3% 66.6%,#477050 66.6% 100%);border:1px solid #e3ded3;border-radius:3px"></div>
+{{ if eq $l "nl" }}
+  <h2 style="color:#36684a">Zala - Boodschappen App</h2>
+  <p>Vul deze code in de app in om in te loggen:</p>
+{{ else if eq $l "de" }}
+  <h2 style="color:#36684a">Zala - Einkaufs-App</h2>
+  <p>Gib diesen Code in der App ein, um dich anzumelden:</p>
+{{ else if eq $l "hu" }}
+  <h2 style="color:#36684a">Zala - Bevásárló App</h2>
+  <p>A belépéshez írd be ezt a kódot az alkalmazásba:</p>
+{{ else }}
+  <h2 style="color:#36684a">Zala - Shopping App</h2>
+  <p>Enter this code in the app to sign in:</p>
+ {{ end }}
+  <p style="font-size:32px;font-weight:bold;letter-spacing:8px;margin:20px 0">{{ .Token }}</p>
+{{ if eq $l "nl" }}
+  <p style="color:#5f6a63;font-size:14px">De code is 1 uur geldig. Heb je dit niet aangevraagd? Dan kun je deze mail negeren.</p>
+{{ else if eq $l "de" }}
+  <p style="color:#5f6a63;font-size:14px">Der Code ist 1 Stunde gültig. Du hast das nicht angefordert? Dann kannst du diese E-Mail ignorieren.</p>
+{{ else if eq $l "hu" }}
+  <p style="color:#5f6a63;font-size:14px">A kód 1 óráig érvényes. Ha nem te kérted, nyugodtan hagyd figyelmen kívül ezt a levelet.</p>
+{{ else }}
+  <p style="color:#5f6a63;font-size:14px">The code is valid for 1 hour. Didn't request this? You can ignore this email.</p>
+ {{ end }}
+  <p style="color:#5f6a63;font-size:12px;margin-top:24px">Made &amp; protected by JEEMC² – Crypto &amp; AI Security</p>
+</div>

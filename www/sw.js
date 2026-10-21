@@ -1,4 +1,4 @@
-/* Boodschappen Zala – eenvoudige offline-cache: altijd eerst het netwerk, anders de laatst bewaarde versie */
+/* Zala - Boodschappen App – eenvoudige offline-cache: altijd eerst het netwerk, anders de laatst bewaarde versie */
 const V = "bz-v1";
 const SHELL = ["./", "index.html", "backend.js", "config.js", "vendor/supabase.js", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(V).then((c) => c.addAll(SHELL)).catch(() => {})); self.skipWaiting(); });

@@ -1,4 +1,4 @@
-# Boodschappen Zala – Android-app (testversie 0.1)
+# Zala - Boodschappen App – Android-app (testversie 0.1)
 
 Made & protected by JEEMC² – Crypto & AI Security.
 
@@ -24,16 +24,18 @@ Eenmalig instellen kost ongeveer 20 minuten. Daarna gaat alles automatisch.
    - Region: **Central EU (Frankfurt)**, voor de AVG
    - Kies een sterk databasewachtwoord en bewaar het in je wachtwoordmanager.
 2. Open **SQL Editor > New query**, plak de inhoud van `supabase/schema.sql` en klik **Run**. Je ziet "Success".
-3. Open **Authentication > Emails > Templates > Magic Link** (in sommige versies heet dit "Magic Link or OTP") en vervang de inhoud door:
-
-   ```html
-   <h2>Je inlogcode voor Boodschappen Zala</h2>
-   <p>Vul deze code in de app in:</p>
-   <p style="font-size:28px;font-weight:bold;letter-spacing:6px">{{ .Token }}</p>
-   <p>De code is 1 uur geldig. Heb je dit niet aangevraagd? Dan kun je deze mail negeren.</p>
-   ```
-
-   Onderwerp: `Je inlogcode: {{ .Token }}`
+3. **Eerst eigen mailserver koppelen.** Nieuwe gratis projecten mogen de mailtemplate pas aanpassen als er een eigen SMTP-server is ingesteld.
+   Open **Authentication > Emails > SMTP Settings**, zet **Enable custom SMTP** aan en gebruik **Brevo** (gratis, 300 mails per dag):
+   - Maak een account op brevo.com. Voeg onder *Senders, domains & dedicated IPs* je afzenderadres toe en verifieer het (beter: verifieer het hele domein met de DKIM- en DMARC-records).
+   - Maak onder *SMTP & API > SMTP* een SMTP-key aan.
+   - In Supabase: host `smtp-relay.brevo.com`, poort `587`, username = de *SMTP login* die Brevo toont, password = de SMTP-key (begint met `xsmtpsib-`), sender email = het geverifieerde adres, sender name `Zala - Boodschappen App`.
+   - Gebruik **niet** `smtp.office365.com`: Microsoft heeft Basic Authentication voor SMTP AUTH in 2026 uitgeschakeld, en Supabase ondersteunt alleen gebruikersnaam plus wachtwoord. Je krijgt dan de foutmelding `{}` bij het inloggen.
+   Daarna: open **Authentication > Emails > Templates**. Doe bij **Magic Link** én bij **Confirm signup** hetzelfde:
+   - **Subject**: plak de inhoud van `supabase/email-subject.txt`
+   - **Body / Message**: plak de inhoud van `supabase/email-template.html`
+   - klik **Save**.
+   De mail komt dan automatisch in de taal van de gebruiker (Nederlands, Duits, Engels of Hongaars). De app geeft die taal door bij het inloggen en bij het wisselen van taal; voor andere talen wordt het Engels.
+   Zet onder **Authentication > URL Configuration** de **Site URL** op `https://<jouw-naam>.github.io/<repo>/`.
 4. Controleer bij **Authentication > Sign In / Providers** dat **Email** aan staat.
 5. Open **Project Settings > API** (of **Data API**) en noteer:
    - **Project URL** (bijv. `https://abcd1234.supabase.co`)
@@ -41,7 +43,7 @@ Eenmalig instellen kost ongeveer 20 minuten. Daarna gaat alles automatisch.
 
    De anon key mag openbaar zijn: de beveiliging zit in de database-regels (RLS). Gebruik nooit de `service_role` key in de app.
 
-> Mail-limiet: de ingebouwde mail van Supabase verstuurt maar een paar mails per uur. Voor 5 à 10 testers is dat meestal genoeg. Komen codes niet aan, koppel dan een eigen SMTP onder **Authentication > Emails > SMTP Settings** (bijvoorbeeld via je Microsoft 365-mailbox of Brevo).
+> Komen codes niet aan? Kijk in je spam en in Brevo onder *Transactional > Logs*. Onder **Authentication > Rate Limits** kun je het aantal mails per uur verhogen.
 
 ## Stap 2 – GitHub (bouwen en downloaden)
 
@@ -56,7 +58,7 @@ Eenmalig instellen kost ongeveer 20 minuten. Daarna gaat alles automatisch.
    ```
    git init
    git add .
-   git commit -m "Boodschappen Zala 0.1"
+   git commit -m "Zala - Boodschappen App 0.1"
    git branch -M main
    git remote add origin https://github.com/<jouw-naam>/boodschappen-zala.git
    git push -u origin main
@@ -73,6 +75,7 @@ In je repository op GitHub:
 1. **Settings > Secrets and variables > Actions > tabblad Variables > New repository variable**
    - `SUPABASE_URL` = je Project URL
    - `SUPABASE_ANON_KEY` = je anon public key
+   - optioneel `VIDEO_URL` = link naar de uitlegvideo (bijv. YouTube). Leeg = de app meldt "video volgt binnenkort".
 2. **Settings > Pages > Build and deployment > Source: GitHub Actions**
 3. **Actions > Bouw app > Run workflow**. Het bouwen duurt 5 à 8 minuten.
 
@@ -96,6 +99,9 @@ Google Play Protect kan waarschuwen dat de app onbekend is. Dat is normaal voor 
 Stuur testers de link naar de downloadpagina. Iedereen logt in met zijn eigen e-mailadres. Via **Instellingen > Huishouden** deel je de 6-letterige code, zodat je partner dezelfde lijst ziet.
 
 ## Updates
+
+**Database-updates:** staat er in de map `supabase` een bestand `update-<datum>-….sql`, draai dat dan één keer in de Supabase **SQL Editor** (plakken > Run). Bij een nieuwe installatie is `schema.sql` genoeg; daar zitten alle updates al in.
+
 
 Elke wijziging die je naar `main` pusht, levert automatisch een nieuwe APK op met een hoger versienummer. Installeer die over de oude heen; je gegevens blijven staan, want die zitten in Supabase. Gebruikt GitHub langer dan 7 dagen zijn opgeslagen ondertekensleutel niet, dan maakt hij een nieuwe. Dan moet je de app één keer verwijderen en opnieuw installeren. Voor de Play Store komt er later een vaste ondertekensleutel.
 

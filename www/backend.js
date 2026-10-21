@@ -1,12 +1,13 @@
-/* Boodschappen Zala – koppeling met Supabase.
+/* Zala - Boodschappen App – koppeling met Supabase.
    Biedt de app dezelfde opslag-API als het prototype (collection/doc/onSnapshot/set/update/delete),
    plus inloggen met een e-mailcode. Zonder configuratie draait de app lokaal op het apparaat. */
 (function () {
   "use strict";
   const C = window.BZ_CONFIG || {};
   const LANGS = ["nl", "de", "en", "hu"];
-  const lang = (() => { try { const s = localStorage.getItem("bz-lang"); if (LANGS.includes(s)) return s; } catch (_) {} const n = (navigator.language || "nl").slice(0, 2); return LANGS.includes(n) ? n : "nl"; })();
+  const lang = (() => { try { const s = localStorage.getItem("bz-lang"); if (LANGS.includes(s)) return s; } catch (_) {} const n = (navigator.language || "en").slice(0, 2); return LANGS.includes(n) ? n : "en"; })();
   const X = {
+    app: ["Boodschappen App", "Einkaufs-App", "Shopping App", "Bevásárló App"],
     title: ["Inloggen", "Anmelden", "Sign in", "Belépés"],
     intro: ["Vul je e-mailadres in. Je krijgt een code van 6 cijfers om in te loggen. Een wachtwoord is niet nodig.",
             "Gib deine E-Mail-Adresse ein. Du bekommst einen 6-stelligen Code zum Anmelden. Ein Passwort brauchst du nicht.",
@@ -27,7 +28,7 @@
   const tx = (k, a) => { let s = X[k][LANGS.indexOf(lang)] || X[k][0]; if (a != null) s = s.split("{0}").join(a); return s; };
 
   if (!C.supabaseUrl || !C.supabaseAnonKey || !window.supabase || !window.supabase.createClient) {
-    window.BZ = { ready: Promise.resolve(null), online: false, logout() {} };
+    window.BZ = { ready: Promise.resolve(null), online: false, logout() {}, setLang() {} };
     return;
   }
 
@@ -130,7 +131,8 @@
 #bzLogin .ok{background:var(--accent-soft,#e3ece4);color:var(--accent,#3d6b4f)}
 #bzLogin .lnk{all:unset;cursor:pointer;color:var(--accent,#3d6b4f);font-weight:600;font-size:.92rem}
 </style><div class="in">
-  <h1>Boodschappen <small style="font-family:var(--f-body);font-size:.85rem;color:var(--accent);letter-spacing:.06em;text-transform:uppercase">Zala</small></h1>
+  <nav aria-label="Taal / Sprache / Language / Nyelv" style="display:flex;gap:4px;justify-content:flex-end">${LANGS.map((l) => `<button type="button" class="btn ${l === lang ? "" : "ghost"} small" data-bzlang="${l}">${l.toUpperCase()}</button>`).join("")}</nav>
+  <h1>Zala <small style="font-family:var(--f-body);font-size:.85rem;color:var(--accent);letter-spacing:.06em;text-transform:uppercase">${tx("app")}</small></h1>
   <div class="huflag" aria-hidden="true"><i></i><i></i><i></i></div>
   <h2 style="margin:6px 0 0">${tx("title")}</h2>
   <p>${tx("intro")}</p>
@@ -159,7 +161,7 @@
         email = $("#bzMail").value.trim().toLowerCase();
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg(tx("badMail")); return; }
         busy($("#bzSend"), true, tx("send"));
-        const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+        const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true, data: { lang } } });
         busy($("#bzSend"), false, tx("send"));
         if (error) { msg(tx("fail") + " (" + error.message + ")"); return; }
         try { localStorage.setItem("bz-last-mail", email); } catch (_) {}
@@ -178,6 +180,7 @@
       });
       $("#bzBack").addEventListener("click", () => { $("#bzF2").hidden = true; $("#bzF1").hidden = false; msg(""); });
       $("#bzLocal").addEventListener("click", () => { box.remove(); resolve(null); });
+      box.querySelectorAll("[data-bzlang]").forEach((b) => b.addEventListener("click", () => { try { localStorage.setItem("bz-lang", b.dataset.bzlang); } catch (_) {} location.reload(); }));
     });
   }
 
@@ -187,12 +190,21 @@
     if (!session) session = await loginScreen();
     if (!session) return null;
     const uid = session.user.id;
+    syncLang(session, lang);
     sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_OUT") location.reload(); });
     return { db, user: { id: async () => uid, can: async () => true, email: session.user.email } };
   }
 
+  async function syncLang(session, l) {
+    try {
+      const cur = session && session.user && session.user.user_metadata && session.user.user_metadata.lang;
+      if (LANGS.includes(l) && cur !== l) await sb.auth.updateUser({ data: { lang: l } });
+    } catch (_) {}
+  }
+
   window.BZ = {
     ready: start(),
+    async setLang(l) { try { const r = await sb.auth.getSession(); await syncLang(r.data && r.data.session, l); } catch (_) {} },
     online: true,
     async logout() { try { await sb.auth.signOut(); } catch (_) {} location.reload(); },
   };

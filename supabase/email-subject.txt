@@ -1,0 +1,1 @@
+{{ $l := "" }}{{ with .Data }}{{ with .lang }}{{ $l = . }}{{ end }}{{ end }}{{ if eq $l "nl" }}Je inlogcode voor Zala - Boodschappen App: {{ .Token }}{{ else if eq $l "de" }}Dein Anmeldecode für Zala - Einkaufs-App: {{ .Token }}{{ else if eq $l "hu" }}Belépési kódod a Zala - Bevásárló Apphoz: {{ .Token }}{{ else }}Your sign-in code for Zala - Shopping App: {{ .Token }}{{ end }}

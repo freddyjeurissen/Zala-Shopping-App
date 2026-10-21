@@ -2,7 +2,7 @@
   "name": "boodschappen-zala",
   "version": "0.1.0",
   "private": true,
-  "description": "Boodschappen Zala – boodschappenlijst, route en samen rijden. Made & protected by JEEMC².",
+  "description": "Zala - Boodschappen App – boodschappenlijst, route en samen rijden. Made & protected by JEEMC².",
   "dependencies": {
     "@capacitor/android": "6.1.2",
     "@capacitor/core": "6.1.2",
