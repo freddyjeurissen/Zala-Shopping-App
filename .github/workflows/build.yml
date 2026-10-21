@@ -36,10 +36,11 @@ jobs:
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+          VIDEO_URL: ${{ vars.VIDEO_URL }}
         run: |
           mkdir -p www/vendor
           cp node_modules/@supabase/supabase-js/dist/umd/supabase.js www/vendor/supabase.js
-          node -e "const r=process.env.GITHUB_REPOSITORY;require('fs').writeFileSync('www/config.js','window.BZ_CONFIG='+JSON.stringify({supabaseUrl:process.env.SUPABASE_URL||'',supabaseAnonKey:process.env.SUPABASE_ANON_KEY||'',apkUrl:'https://github.com/'+r+'/releases/latest/download/boodschappen-zala.apk'})+';\n')"
+          node -e "const r=process.env.GITHUB_REPOSITORY;require('fs').writeFileSync('www/config.js','window.BZ_CONFIG='+JSON.stringify({supabaseUrl:process.env.SUPABASE_URL||'',supabaseAnonKey:process.env.SUPABASE_ANON_KEY||'',apkUrl:'https://github.com/'+r+'/releases/latest/download/boodschappen-zala.apk',videoUrl:process.env.VIDEO_URL||''})+';\n')"
           if [ -z "$SUPABASE_URL" ]; then echo "::warning::SUPABASE_URL ontbreekt; de app draait dan alleen lokaal op het apparaat."; fi
 
       - name: Vaste ondertekensleutel bewaren (zodat updates over de vorige versie heen installeren)
@@ -49,14 +50,15 @@ jobs:
           key: debug-keystore-v1
 
       - name: Android-project maken
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
           npx cap add android
-          perl -0pi -e 's#</manifest>#    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n</manifest>#' android/app/src/main/AndroidManifest.xml
-          perl -pi -e 's/versionCode \d+/versionCode ${{ github.run_number }}/; s/versionName "[^"]*"/versionName "0.1.${{ github.run_number }}"/' android/app/build.gradle
+          bash scripts/android-setup.sh
 
       - name: App-icoon
         continue-on-error: true
-        run: npx capacitor-assets generate --android --assetPath assets --iconBackgroundColor '#3d6b4f' --splashBackgroundColor '#f6f4ee'
+        run: npx capacitor-assets generate --android --assetPath assets --iconBackgroundColor '#36684a' --splashBackgroundColor '#f6f4ee'
 
       - name: APK bouwen
         run: |
@@ -70,7 +72,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0.1.${{ github.run_number }}
-          name: Boodschappen Zala 0.1.${{ github.run_number }}
+          name: Zala - Boodschappen App 0.1.${{ github.run_number }}
           body: Testversie. Installeren via de downloadpagina of direct dit APK-bestand.
           make_latest: "true"
           files: boodschappen-zala.apk
